@@ -43,6 +43,18 @@ func Main() {
 		log.SetLevel(log.DEBUG)
 	}
 
+	if o.MaxMessageLength == 0 {
+		o.MaxMessageLength = 1320
+	}
+
+	if o.MaxPaddingLength == 0 {
+		o.MaxPaddingLength = 256
+	}
+
+	if o.MinMessageLength == 0 {
+		o.MinMessageLength = 100
+	}
+
 	log.Info("Configuration:\n%s", o)
 
 	cfg := &pipe.Config{
@@ -74,18 +86,6 @@ func Main() {
 		}
 
 		cfg.TLSCertificate = cert
-	}
-
-	if o.MaxMessageLength == 0 {
-		cfg.MaxMessageLength = 1320
-	}
-
-	if o.MaxPaddingLength == 0 {
-		cfg.MaxPaddingLength = 256
-	}
-
-	if o.MinMessageLength == 0 {
-		cfg.MinMessageLength = 100
 	}
 
 	srv, err := pipe.NewServer(cfg)
