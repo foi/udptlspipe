@@ -75,6 +75,17 @@ type Server struct {
 	// wg tracks active workers. Stop won't finish until there is at least
 	// won't finish until there's at least one active worker.
 	wg sync.WaitGroup
+
+	// maxMessageLength is the maximum length that is safe to use.
+	maxMessageLength int
+
+	// minMessageLength is the minimum message size. If the message is smaller, it
+	// will be padded with random bytes.
+	minMessageLength int
+
+	// maxPaddingLength is the maximum size of a random padding that's added to
+	// every message.
+	maxPaddingLength int
 }
 
 // Config represents the server configuration.
@@ -125,6 +136,17 @@ type Config struct {
 	// proxy to respond to unauthorized or proxy requests. If not specified,
 	// it will respond with a stub page 403 Forbidden.
 	ProbeReverseProxyURL string
+
+	// MaxMessageLength is the maximum length that is safe to use.
+	MaxMessageLength int
+
+	// MinMessageLength is the minimum message size. If the message is smaller, it
+	// will be padded with random bytes.
+	MinMessageLength int
+
+	// MaxPaddingLength is the maximum size of a random padding that's added to
+	// every message.
+	MaxPaddingLength int
 }
 
 // createTLSConfig creates a TLS configuration as per the server configuration.
@@ -175,6 +197,9 @@ func NewServer(config *Config) (s *Server, err error) {
 		srcConnsMu:           &sync.Mutex{},
 		dstConns:             map[net.Conn]struct{}{},
 		dstConnsMu:           &sync.Mutex{},
+		maxMessageLength:     config.MaxMessageLength,
+		minMessageLength:     config.MinMessageLength,
+		maxPaddingLength:     config.MaxPaddingLength,
 	}
 
 	s.tlsConfig, err = createTLSConfig(config)
@@ -649,9 +674,9 @@ func (s *Server) processConn(rwc io.ReadWriteCloser) {
 	// connection between them needs to be wrapped. In server mode it is the
 	// source connection, in client mode it is the destination connection.
 	if s.serverMode {
-		srcRw = tunnel.NewMsgReadWriter(srcRw)
+		srcRw = tunnel.NewMsgReadWriter(srcRw, s.maxMessageLength, s.minMessageLength, s.maxPaddingLength)
 	} else {
-		dstRw = tunnel.NewMsgReadWriter(dstRw)
+		dstRw = tunnel.NewMsgReadWriter(dstRw, s.maxMessageLength, s.minMessageLength, s.maxPaddingLength)
 	}
 
 	tunnel.Tunnel(s.String(), srcRw, dstRw)

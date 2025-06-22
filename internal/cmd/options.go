@@ -61,6 +61,17 @@ type Options struct {
 
 	// Verbose defines whether we should write the DEBUG-level log or not.
 	Verbose bool `yaml:"verbose" short:"v" long:"verbose" description:"Verbose output (optional)." optional:"yes" optional-value:"true"`
+
+	// MaxMessageLength is the maximum length that is safe to use.
+	MaxMessageLength int `yaml:"max-message-length" long:"max-message-length" description:"Max message length (default 1320)" value-name:"<int length>" optional:"yes"`
+
+	// MinMessageLength is the minimum message size. If the message is smaller, it
+	// will be padded with random bytes.
+	MinMessageLength int `yaml:"min-message-length" long:"min-message-length" description:"Min message length (default 100)" value-name:"<int length>" optional:"yes"`
+
+	// MaxPaddingLength is the maximum size of a random padding that's added to
+	// every message.
+	MaxPaddingLength int `yaml:"max-padding-length" long:"max-padding-length" description:"Max padding length (default 256)" value-name:"<int length>" optional:"yes"`
 }
 
 // type check

@@ -103,7 +103,7 @@ need to make some adjustments to the WireGuard client configuration:
 * Use the address of the `udptlspipe` client as an endpoint in your WireGuard
   client configuration.
 * Add `MTU = 1280` to the `[Peer]` section of both WireGuard client and server
-  configuration files.
+  configuration files. The MTU can be increased by passing custom values for `--max-message-length`, `--min-message-length`, and `--max-padding-length`.
 * Exclude the `udptlspipe` server IP from `AllowedIPs` in the WireGuard client
   configuration. This [calculator][wireguardcalculator] may help you.
 
@@ -237,6 +237,9 @@ Application Options:
       --tls-keyfile=<path-to-key-file>                      Path to the private key for the cert specified in tls-certfile.
       --probe-reverseproxyurl=<hostname>                    Unauthorized requests and probes will be proxied to the URL.
   -v, --verbose                                             Verbose output (optional).
+      --max-message-length=<int length>                     Max message length (default 1320)
+      --min-message-length=<int length>                     Min message length (default 100)
+      --max-padding-length=<int length>                     Max padding length (default 256)
 
 Help Options:
   -h, --help                                                Show this help message

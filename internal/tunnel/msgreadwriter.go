@@ -9,27 +9,26 @@ import (
 	"github.com/AdguardTeam/golibs/log"
 )
 
-// MaxMessageLength is the maximum length that is safe to use.
-// TODO(ameshkov): Make it configurable.
-const MaxMessageLength = 1320
-
-// MinMessageLength is the minimum message size. If the message is smaller, it
-// will be padded with random bytes.
-const MinMessageLength = 100
-
-// MaxPaddingLength is the maximum size of a random padding that's added to
-// every message.
-const MaxPaddingLength = 256
-
-// MsgReadWriter is a wrapper over io.ReadWriter that encodes messages written
-// to and read from the base writer.
 type MsgReadWriter struct {
 	base io.ReadWriter
+	// MaxMessageLength is the maximum length that is safe to use.
+	maxMessageLength int
+	// MaxPaddingLength is the maximum size of a random padding that's added to
+	// every message.
+	maxPaddingLength int
+	// MinMessageLength is the minimum message size. If the message is smaller, it
+	// will be padded with random bytes.
+	minMessageLength int
 }
 
 // NewMsgReadWriter creates a new instance of *MsgReadWriter.
-func NewMsgReadWriter(base io.ReadWriter) (rw *MsgReadWriter) {
-	return &MsgReadWriter{base: base}
+func NewMsgReadWriter(base io.ReadWriter, maxMessageLength, minMessageLength, maxPaddingLength int) (rw *MsgReadWriter) {
+	return &MsgReadWriter{
+		base:             base,
+		maxMessageLength: maxMessageLength,
+		minMessageLength: minMessageLength,
+		maxPaddingLength: maxPaddingLength,
+	}
 }
 
 // type check
@@ -38,13 +37,13 @@ var _ io.ReadWriter = (*MsgReadWriter)(nil)
 // Read implements the io.ReadWriter interface for *MsgReadWriter.
 func (rw *MsgReadWriter) Read(b []byte) (n int, err error) {
 	// Read the main message (always goes first).
-	msg, err := readPrefixed(rw.base)
+	msg, err := rw.readPrefixed(rw.base)
 	if err != nil {
 		return 0, err
 	}
 
 	// Skip padding.
-	_, err = readPrefixed(rw.base)
+	_, err = rw.readPrefixed(rw.base)
 	if err != nil {
 		return 0, err
 	}
@@ -62,11 +61,11 @@ func (rw *MsgReadWriter) Read(b []byte) (n int, err error) {
 func (rw *MsgReadWriter) Write(b []byte) (n int, err error) {
 	// Create random padding to make it harder to understand what's inside
 	// the tunnel.
-	minLength := MinMessageLength - len(b)
+	minLength := rw.minMessageLength - len(b)
 	if minLength <= 0 {
 		minLength = 1
 	}
-	maxLength := MaxPaddingLength
+	maxLength := rw.maxPaddingLength
 	if maxLength <= minLength {
 		maxLength = minLength + 1
 	}
@@ -103,19 +102,19 @@ func pack(b, padding []byte) (msg []byte) {
 }
 
 // readPrefixed reads a 2-byte prefixed byte array from the reader.
-func readPrefixed(r io.Reader) (b []byte, err error) {
+func (rw *MsgReadWriter) readPrefixed(r io.Reader) (b []byte, err error) {
 	var length uint16
 	err = binary.Read(r, binary.BigEndian, &length)
 	if err != nil {
 		return nil, err
 	}
 
-	if length > MaxMessageLength {
+	if length > uint16(rw.maxMessageLength) {
 		// Warn the user that this may not work correctly.
 		log.Error(
 			"Warning: received message of length %d larger than %d, considering reducing the MTU",
 			length,
-			MaxMessageLength,
+			rw.maxMessageLength,
 		)
 	}
 

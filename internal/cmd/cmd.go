@@ -54,6 +54,9 @@ func Main() {
 		VerifyCertificate:    o.VerifyCertificate,
 		TLSServerName:        o.TLSServerName,
 		ProbeReverseProxyURL: o.ProbeReverseProxyURL,
+		MaxMessageLength:     o.MaxMessageLength,
+		MinMessageLength:     o.MinMessageLength,
+		MaxPaddingLength:     o.MaxPaddingLength,
 	}
 
 	if o.TLSCertPath != "" {
@@ -71,6 +74,18 @@ func Main() {
 		}
 
 		cfg.TLSCertificate = cert
+	}
+
+	if o.MaxMessageLength == 0 {
+		cfg.MaxMessageLength = 1320
+	}
+
+	if o.MaxPaddingLength == 0 {
+		cfg.MaxPaddingLength = 256
+	}
+
+	if o.MinMessageLength == 0 {
+		cfg.MinMessageLength = 100
 	}
 
 	srv, err := pipe.NewServer(cfg)
